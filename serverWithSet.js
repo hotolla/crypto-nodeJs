@@ -2,32 +2,16 @@ const http = require('http');
 const fs = require('fs');
 const ws = new require('ws');
 
-// const wss = new ws.Server({port: 8080});
-const wss = new ws.Server({noServer: true});
-
+const wss = new ws.Server({port: 8080});
 const clients = new Set();
-// wss.on('connection', onSocketConnect)
-function accept(req, res) {
 
-  if (req.url == '/ws' && req.headers.upgrade &&
-      req.headers.upgrade.toLowerCase() == 'websocket' &&
-      // может быть подключён: keep-alive, Upgrade
-      req.headers.connection.match(/\bupgrade\b/i)) {
-    wss.handleUpgrade(req, req.socket, Buffer.alloc(0), onSocketConnect);
-  } else if (req.url == '/') { // index.html
-    fs.createReadStream('./index.html').pipe(res);
-  } else { // страница не найдена
-    res.writeHead(404);
-    res.end();
-  }
-}
-
+wss.on('connection', onSocketConnect)
 function onSocketConnect(ws) {
   clients.add(ws);
-  console.log(`новое подключение`);
+  console.log(`new connection`);
 
   ws.on('message', function(message) {
-    console.log(`получено сообщение: ${message}`);
+    console.log(`message received: ${message}`);
 
     message = message.slice(0, 50); // максимальная длина сообщения 50
 
@@ -36,20 +20,11 @@ function onSocketConnect(ws) {
     }
   });
 
-  ws.on('закрыть', function() {
-    console.log(`подключение закрыто`);
+  ws.on('close', function() {
+    console.log(`connection closed`);
     clients.delete(ws);
   });
 }
 
-let log;
-if (!module.parent) {
-  log = console.log;
-  http.createServer(accept).listen(8080);
-} else {
-  // для размещения на javascript.info
-  log = function() {};
-  // log = console.log;
-  exports.accept = accept;
-}
+  exports.onSocketConnect = onSocketConnect;
 
